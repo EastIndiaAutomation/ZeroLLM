@@ -282,6 +282,10 @@ export function ChatInterface() {
     }
   };
 
+  const handleAction = (command: string) => {
+    handleSend(command);
+  };
+
   if (!session) return null;
 
   return (
@@ -385,7 +389,7 @@ export function ChatInterface() {
                   ) : (
                     <div className="space-y-6">
                       {session.messages.map((msg) => (
-                        <ChatMessage key={msg.id} message={msg} />
+                        <ChatMessage key={msg.id} message={msg} onAction={handleAction} />
                       ))}
                     </div>
                   )}
