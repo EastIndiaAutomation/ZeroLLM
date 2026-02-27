@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { generateChatTitle } from "@/ai/actions/chat-actions";
 import Link from "next/link";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export function ChatInterface() {
   const { 
@@ -69,6 +69,7 @@ export function ChatInterface() {
     setIsSettingsOpen
   } = useAppStore();
   
+  const { toast } = useToast();
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isToolsExpanded, setIsToolsExpanded] = useState(false);
@@ -121,7 +122,12 @@ export function ChatInterface() {
         recognitionRef.current.onerror = (event: any) => {
           setIsListening(false);
           if (event.error !== 'no-speech') {
-            toast({ variant: "destructive", title: "Speech Node Error", description: "Signal integrity compromised." });
+            toast({ 
+              variant: "destructive", 
+              title: "Speech Node Error", 
+              description: "Signal integrity compromised.",
+              className: "rounded-none border-2 border-destructive bg-white text-destructive font-bold uppercase text-[10px]"
+            });
           }
         };
 
@@ -130,11 +136,16 @@ export function ChatInterface() {
         };
       }
     }
-  }, []);
+  }, [toast]);
 
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) {
-      toast({ variant: "destructive", title: "Hardware Error", description: "Speech engine not detected." });
+      toast({ 
+        variant: "destructive", 
+        title: "Hardware Error", 
+        description: "Speech engine not detected.",
+        className: "rounded-none border-2 border-destructive bg-white text-destructive font-bold uppercase text-[10px]"
+      });
       return;
     }
 
@@ -149,7 +160,7 @@ export function ChatInterface() {
         console.error("Mic Failure", e);
       }
     }
-  }, [isListening]);
+  }, [isListening, toast]);
 
   useEffect(() => {
     setMounted(true);
@@ -182,7 +193,7 @@ export function ChatInterface() {
       const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (viewport) viewport.scrollTop = viewport.scrollHeight;
     }
-  }, [session?.messages?.length, isTyping, session?.messages[session?.messages.length - 1]?.content]);
+  }, [session?.messages?.length, isTyping]);
 
   const handleSend = async (customInput?: string) => {
     const textToSend = customInput || input;

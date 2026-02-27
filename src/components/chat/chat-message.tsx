@@ -21,7 +21,7 @@ import {
   Share2,
   LineChart
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { generateSpeech } from "@/ai/flows/speech-generation-flow";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -32,6 +32,7 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, onAction }: ChatMessageProps) {
+  const { toast } = useToast();
   const isAssistant = message.role === "assistant";
   const isError = isAssistant && (message.content.includes("ERROR:") || message.content.includes("FAILURE:"));
   const [isPlaying, setIsPlaying] = useState(false);
@@ -39,12 +40,22 @@ export function ChatMessage({ message, onAction }: ChatMessageProps) {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
-    toast({ title: "Node Synchronized", description: "Signal copied to local buffer." });
+    toast({ 
+      title: "Node Synchronized", 
+      description: "Signal copied to local buffer.",
+      className: "rounded-none border-2 border-primary bg-white text-slate-900 font-bold uppercase text-[10px]"
+    });
   };
 
   const handleShare = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/share/${message.id}`);
-    toast({ title: "Signal Exported", description: "Universal share link persisted to buffer." });
+    // Generate a temporary mock share link
+    const shareLink = `${window.location.origin}/share/${message.id}`;
+    navigator.clipboard.writeText(shareLink);
+    toast({ 
+      title: "Signal Exported", 
+      description: "Universal share link persisted to buffer.",
+      className: "rounded-none border-2 border-primary bg-white text-slate-900 font-bold uppercase text-[10px]"
+    });
   };
 
   const handleSpeech = async () => {
@@ -57,6 +68,12 @@ export function ChatMessage({ message, onAction }: ChatMessageProps) {
       audio.play();
     } catch (error) {
       setIsPlaying(false);
+      toast({ 
+        variant: "destructive",
+        title: "Audio Node Failure", 
+        description: "Unable to synthesize speech signal.",
+        className: "rounded-none border-2 border-destructive bg-white text-destructive font-bold uppercase text-[10px]"
+      });
     }
   };
 
@@ -71,12 +88,19 @@ export function ChatMessage({ message, onAction }: ChatMessageProps) {
       case 'lang': command = "[LINGUISTIC_TRANSLATION]: Synchronize previous message into the secondary language protocol."; break;
     }
     
-    if (command) onAction(command);
+    if (command) {
+      onAction(command);
+      toast({ 
+        title: "Action Initiated", 
+        description: `Executing ${id.toUpperCase()} protocol...`,
+        className: "rounded-none border-2 border-primary bg-white text-slate-900 font-bold uppercase text-[10px]"
+      });
+    }
   };
 
   return (
     <div className={cn(
-      "flex w-full px-2 animate-in fade-in slide-in-from-bottom-3 duration-700 min-w-0",
+      "flex w-full px-2 animate-in fade-in slide-in-from-bottom-3 duration-700 min-w-0 mb-4",
       isAssistant ? "justify-start" : "justify-end"
     )}>
       <div className={cn(
