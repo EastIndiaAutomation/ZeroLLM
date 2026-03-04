@@ -49,7 +49,7 @@ function getHeaders(apiKey?: string) {
 }
 
 /**
- * Enhanced Fetch with Dual-Stack Fallback for Localhost
+ * Enhanced Fetch with Dual-Stack Fallback for Localhost and increased timeout
  */
 async function resilientFetch(url: string, options: RequestInit): Promise<Response> {
   const urls = [url];
@@ -62,7 +62,7 @@ async function resilientFetch(url: string, options: RequestInit): Promise<Respon
     try {
       const response = await fetch(targetUrl, {
         ...options,
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(10000) // 10s for slow local engines
       });
       if (response.ok) return response;
     } catch (e) {
@@ -131,37 +131,28 @@ export async function fetchModels(baseUrl: string, apiKey?: string): Promise<LLM
   if (!baseUrl) return [];
   const base = normalizeUrl(baseUrl);
   
-  // 1. Try OpenAI Compatible /v1/models (Standard)
-  try {
-    const response = await resilientFetch(joinPath(base, '/v1/models'), {
-      method: 'GET',
-      headers: getHeaders(apiKey)
-    });
-    const data = await safeJsonParse(response);
-    if (data && data.data && Array.isArray(data.data)) return data.data;
-  } catch (e) {}
+  const attemptEndpoints = [
+    joinPath(base, '/v1/models'),
+    joinPath(base, '/api/v1/models'),
+    joinPath(base, '/api/tags')
+  ];
 
-  // 2. Try LM Studio specific /api/v1/models
-  try {
-    const response = await resilientFetch(joinPath(base, '/api/v1/models'), {
-      method: 'GET',
-      headers: getHeaders(apiKey)
-    });
-    const data = await safeJsonParse(response);
-    if (data && data.data && Array.isArray(data.data)) return data.data;
-  } catch (e) {}
-
-  // 3. Try Ollama /api/tags
-  try {
-    const response = await resilientFetch(joinPath(base, '/api/tags'), {
-      method: 'GET',
-      headers: getHeaders(apiKey)
-    });
-    const data = await safeJsonParse(response);
-    if (data && data.models && Array.isArray(data.models)) {
-      return data.models.map((m: any) => ({ id: m.name || m.id }));
-    }
-  } catch (e) {}
+  for (const endpoint of attemptEndpoints) {
+    try {
+      const response = await resilientFetch(endpoint, {
+        method: 'GET',
+        headers: getHeaders(apiKey)
+      });
+      const data = await safeJsonParse(response);
+      
+      if (endpoint.includes('/tags') && data?.models) {
+        return data.models.map((m: any) => ({ id: m.name || m.id }));
+      }
+      if (data?.data && Array.isArray(data.data)) {
+        return data.data;
+      }
+    } catch (e) {}
+  }
 
   return [];
 }
@@ -171,20 +162,15 @@ export async function loadModel(baseUrl: string, modelId: string, apiKey?: strin
   const base = normalizeUrl(baseUrl);
   
   try {
-    // Optimized for LM Studio - Use ONLY the 'model' key to avoid unrecognized_keys error
     const response = await resilientFetch(joinPath(base, '/api/v1/models/load'), {
       method: 'POST',
       headers: getHeaders(apiKey),
-      body: JSON.stringify({ 
-        model: modelId
-      })
+      body: JSON.stringify({ model: modelId })
     });
     
-    if (response.ok) return true;
-    if (response.status === 404) return true; // Endpoint doesn't exist, assume JIT loading
-
+    if (response.ok || response.status === 404) return true; 
     return false;
   } catch (e) {
-    return true; // Silent success for engines without load endpoints
+    return true; 
   }
 }

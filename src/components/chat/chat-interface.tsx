@@ -50,6 +50,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { generateChatTitle } from "@/ai/actions/chat-actions";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export function ChatInterface() {
   const { 
@@ -533,7 +534,7 @@ export function ChatInterface() {
 
                   {/* ID TAB - Personas */}
                   <TabsContent value="id" className="mt-0">
-                    {!selectedCategory ? (
+                    {(!selectedCategory || !groupedPersonas[selectedCategory]) ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {Object.keys(groupedPersonas).map((cat) => (
                           <Button 
@@ -552,21 +553,28 @@ export function ChatInterface() {
                         <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="text-[8px] font-bold uppercase gap-2 mb-2">
                           <ArrowLeft size={10} /> Back to Identities
                         </Button>
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="grid grid-cols-1 gap-2 pb-4">
                           {groupedPersonas[selectedCategory].map((p) => (
                             <button 
                               key={p.id}
                               onClick={() => applyPersona(session.id, p.id)}
                               className={cn(
-                                "p-3 text-left border-2 transition-all flex justify-between items-center",
+                                "p-3 text-left border-2 transition-all flex flex-col gap-1",
                                 session.personaId === p.id ? "border-accent bg-accent/5" : "border-border hover:border-accent/20"
                               )}
                             >
-                              <div className="min-w-0">
+                              <div className="flex justify-between items-center w-full">
                                 <div className="text-[10px] font-black uppercase tracking-tight text-slate-900">{p.name}</div>
-                                <p className="text-[8px] text-slate-500 line-clamp-1">{p.description}</p>
+                                {session.personaId === p.id && <Check size={12} className="text-accent shrink-0" />}
                               </div>
-                              {session.personaId === p.id && <Check size={12} className="text-accent shrink-0" />}
+                              <p className="text-[8px] text-slate-500 line-clamp-2 leading-tight">{p.description}</p>
+                              {p.keypoints && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {p.keypoints.slice(0, 3).map((kp, i) => (
+                                    <Badge key={i} variant="outline" className="text-[6px] uppercase px-1 py-0 rounded-none border-slate-200 text-slate-400">{kp}</Badge>
+                                  ))}
+                                </div>
+                              )}
                             </button>
                           ))}
                         </div>
@@ -576,7 +584,7 @@ export function ChatInterface() {
 
                   {/* ARCH TAB - Frameworks */}
                   <TabsContent value="arch" className="mt-0">
-                    {!selectedCategory ? (
+                    {(!selectedCategory || !groupedFrameworks[selectedCategory]) ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {Object.keys(groupedFrameworks).map((cat) => (
                           <Button 
@@ -595,21 +603,27 @@ export function ChatInterface() {
                         <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="text-[8px] font-bold uppercase gap-2 mb-2">
                           <ArrowLeft size={10} /> Back to Architectures
                         </Button>
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="grid grid-cols-1 gap-2 pb-4">
                           {groupedFrameworks[selectedCategory].map((f) => (
                             <button 
                               key={f.id}
                               onClick={() => applyFramework(session.id, f.id)}
                               className={cn(
-                                "p-3 text-left border-2 transition-all flex justify-between items-center",
+                                "p-3 text-left border-2 transition-all flex flex-col gap-1",
                                 session.frameworkId === f.id ? "border-accent bg-accent/5" : "border-border hover:border-accent/20"
                               )}
                             >
-                              <div className="min-w-0">
+                              <div className="flex justify-between items-center w-full">
                                 <div className="text-[10px] font-black uppercase tracking-tight text-slate-900">{f.name}</div>
-                                <p className="text-[8px] text-slate-500 line-clamp-1">{f.description}</p>
+                                {session.frameworkId === f.id && <Check size={12} className="text-accent shrink-0" />}
                               </div>
-                              {session.frameworkId === f.id && <Check size={12} className="text-accent shrink-0" />}
+                              <p className="text-[8px] text-slate-500 line-clamp-2 leading-tight">{f.description}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge className="text-[6px] bg-slate-100 text-slate-600 rounded-none uppercase px-1">{f.complexity}</Badge>
+                                {f.usecases && f.usecases.length > 0 && (
+                                  <span className="text-[6px] text-slate-400 font-bold uppercase">Usecase: {f.usecases[0]}</span>
+                                )}
+                              </div>
                             </button>
                           ))}
                         </div>
@@ -619,7 +633,7 @@ export function ChatInterface() {
 
                   {/* LOGIC TAB - Linguistics */}
                   <TabsContent value="logic" className="mt-0">
-                    {!selectedCategory ? (
+                    {(!selectedCategory || !groupedLinguistics[selectedCategory]) ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {Object.keys(groupedLinguistics).map((cat) => (
                           <Button 
@@ -638,21 +652,26 @@ export function ChatInterface() {
                         <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)} className="text-[8px] font-bold uppercase gap-2 mb-2">
                           <ArrowLeft size={10} /> Back to Logic
                         </Button>
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="grid grid-cols-1 gap-2 pb-4">
                           {groupedLinguistics[selectedCategory].map((l) => (
                             <button 
                               key={l.id}
                               onClick={() => applyLinguisticControl(session.id, l.id)}
                               className={cn(
-                                "p-3 text-left border-2 transition-all flex justify-between items-center",
+                                "p-3 text-left border-2 transition-all flex flex-col gap-1",
                                 session.linguisticId === l.id ? "border-accent bg-accent/5" : "border-border hover:border-accent/20"
                               )}
                             >
-                              <div className="min-w-0">
-                                <div className="text-[10px] font-black uppercase tracking-tight text-slate-900">{l.name}</div>
-                                <p className="text-[8px] text-slate-500 line-clamp-1">{l.description}</p>
+                              <div className="flex justify-between items-center w-full">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-900">{l.name}</div>
+                                {session.linguisticId === l.id && <Check size={12} className="text-accent shrink-0" />}
                               </div>
-                              {session.linguisticId === l.id && <Check size={12} className="text-accent shrink-0" />}
+                              <p className="text-[8px] text-slate-500 line-clamp-2 leading-tight">{l.description}</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {l.keypoints?.map((kp, i) => (
+                                  <Badge key={i} variant="outline" className="text-[6px] border-slate-100 text-slate-400 px-1 py-0 rounded-none uppercase">{kp}</Badge>
+                                ))}
+                              </div>
                             </button>
                           ))}
                         </div>

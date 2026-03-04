@@ -24,11 +24,21 @@ import { useToast } from "@/hooks/use-toast";
 import { generateSpeech } from "@/ai/flows/speech-generation-flow";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ChatMessageProps {
   message: Message;
   onAction?: (command: string) => void;
 }
+
+const LANGUAGES = [
+  "Hindi", "Spanish", "French", "German", "Japanese", "Chinese", "Korean", "Russian", "Arabic", "Italian", "Portuguese"
+];
 
 export function ChatMessage({ message, onAction }: ChatMessageProps) {
   const { toast } = useToast();
@@ -75,15 +85,15 @@ export function ChatMessage({ message, onAction }: ChatMessageProps) {
     }
   };
 
-  const executeAction = (id: string) => {
+  const executeAction = (id: string, detail?: string) => {
     if (!onAction) return;
     
     let command = "";
     switch(id) {
-      case 'regen': command = "[REGENERATE_NODE]: Analyze previous intent and optimize response fidelity."; break;
-      case 'fact': command = "[FACT_CHECK_PROTOCOL]: Cross-reference all claims in the previous message against verified nodes."; break;
+      case 'regen': command = "[REGENERATE_SIGNAL]: Analyze previous intent and optimize response fidelity with increased creative entropy."; break;
+      case 'fact': command = "[CONDUCT_FACT_CHECK]: Cross-reference all claims in the previous message against verified data nodes."; break;
       case 'trace': command = "[LOGIC_TRACE_ACTIVE]: Deconstruct the reasoning path of the previous response step-by-step."; break;
-      case 'lang': command = "[LINGUISTIC_TRANSLATION]: Synchronize previous message into the secondary language protocol."; break;
+      case 'lang': command = `[TRANSLATE_PACKET: ${detail || 'Hindi'}]: Synchronize previous message into the ${detail || 'secondary'} language protocol while maintaining technical tone.`; break;
     }
     
     if (command) {
@@ -169,25 +179,51 @@ export function ChatMessage({ message, onAction }: ChatMessageProps) {
 
             {isToolsExpanded && (
               <div className="grid grid-cols-4 sm:grid-cols-8 divide-x-2 divide-slate-100 border-t-2 border-slate-100 bg-slate-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {[
-                  { id: 'voice', icon: <Volume2 size={12} />, title: 'Voice', action: handleSpeech },
-                  { id: 'regen', icon: <RefreshCw size={12} />, title: 'Regen', action: () => executeAction('regen') },
-                  { id: 'fact', icon: <Search size={12} />, title: 'Fact', action: () => executeAction('fact') },
-                  { id: 'trace', icon: <LineChart size={12} />, title: 'Trace', action: () => executeAction('trace') },
-                  { id: 'lang', icon: <Languages size={12} />, title: 'Lang', action: () => executeAction('lang') },
-                  { id: 'copy', icon: <Copy size={12} />, title: 'Copy', action: handleCopy },
-                  { id: 'share', icon: <Share2 size={12} />, title: 'Share', action: handleShare },
-                ].map((btn, idx) => (
-                  <button 
-                    key={btn.id}
-                    onClick={btn.action}
-                    className="flex flex-col items-center justify-center py-3 hover:bg-primary/5 group transition-colors border-b-2 border-slate-100 sm:border-b-0"
-                  >
-                    <div className="text-primary group-hover:scale-110 transition-transform mb-0.5">{btn.icon}</div>
-                    <span className="text-[7px] font-black uppercase tracking-widest text-primary/60 group-hover:text-primary">{btn.title}</span>
-                  </button>
-                ))}
-                <div className="flex flex-col items-center justify-center py-3 bg-primary text-white border-b-2 border-primary sm:border-b-0">
+                <button onClick={handleSpeech} className="flex flex-col items-center justify-center py-3 hover:bg-primary/5 group transition-all">
+                  <Volume2 size={12} className="text-primary group-hover:scale-110 mb-0.5" />
+                  <span className="text-[7px] font-black uppercase text-primary/60">Voice</span>
+                </button>
+                <button onClick={() => executeAction('regen')} className="flex flex-col items-center justify-center py-3 hover:bg-primary/5 group transition-all">
+                  <RefreshCw size={12} className="text-primary group-hover:scale-110 mb-0.5" />
+                  <span className="text-[7px] font-black uppercase text-primary/60">Regen</span>
+                </button>
+                <button onClick={() => executeAction('fact')} className="flex flex-col items-center justify-center py-3 hover:bg-primary/5 group transition-all">
+                  <Search size={12} className="text-primary group-hover:scale-110 mb-0.5" />
+                  <span className="text-[7px] font-black uppercase text-primary/60">Fact</span>
+                </button>
+                <button onClick={() => executeAction('trace')} className="flex flex-col items-center justify-center py-3 hover:bg-primary/5 group transition-all">
+                  <LineChart size={12} className="text-primary group-hover:scale-110 mb-0.5" />
+                  <span className="text-[7px] font-black uppercase text-primary/60">Trace</span>
+                </button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex flex-col items-center justify-center py-3 hover:bg-primary/5 group transition-all border-r-2 border-slate-100">
+                      <Languages size={12} className="text-primary group-hover:scale-110 mb-0.5" />
+                      <span className="text-[7px] font-black uppercase text-primary/60">Lang</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-primary bg-white/95 backdrop-blur-xl">
+                    <div className="grid grid-cols-2 gap-1 p-1">
+                      {LANGUAGES.map(l => (
+                        <DropdownMenuItem key={l} onClick={() => executeAction('lang', l)} className="text-[9px] font-black uppercase px-3 py-1.5 focus:bg-primary focus:text-white rounded-none">
+                          {l}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <button onClick={handleCopy} className="flex flex-col items-center justify-center py-3 hover:bg-primary/5 group transition-all">
+                  <Copy size={12} className="text-primary group-hover:scale-110 mb-0.5" />
+                  <span className="text-[7px] font-black uppercase text-primary/60">Copy</span>
+                </button>
+                <button onClick={handleShare} className="flex flex-col items-center justify-center py-3 hover:bg-primary/5 group transition-all">
+                  <Share2 size={12} className="text-primary group-hover:scale-110 mb-0.5" />
+                  <span className="text-[7px] font-black uppercase text-primary/60">Share</span>
+                </button>
+
+                <div className="flex flex-col items-center justify-center py-3 bg-primary text-white">
                   <Clock size={12} className="mb-0.5" />
                   <span className="text-[8px] font-black font-mono">
                     {new Date(message.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}

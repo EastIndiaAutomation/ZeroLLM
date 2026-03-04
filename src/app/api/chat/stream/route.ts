@@ -12,28 +12,34 @@ export async function POST(req: NextRequest) {
 
     let activeMessages = [...messages];
     
-    // Inject temporal and grounding context
+    // TEMPORAL & GROUNDING INJECTION
     const now = new Date();
-    const temporalPrefix = `[NEURAL SYNC: ${now.toLocaleTimeString('en-IN')}]\n`;
+    const temporalPrefix = `[NEURAL SYNC: ${now.toLocaleTimeString('en-IN')}]\n[IDENTITY ACTIVE]\n`;
 
-    let groundingPrefix = "";
+    let toolInstructions = "";
     if (settings?.webSearchEnabled) {
       const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || "";
       const groundingData = await performWebSearch(lastUserMsg);
-      if (groundingData) groundingPrefix = `\n\n[SYSTEM: WEB GROUNDING ACTIVE]\n${groundingData}`;
+      if (groundingData) toolInstructions += `\n\n[SYSTEM: WEB GROUNDING ACTIVE]\n${groundingData}`;
     }
+
+    if (settings?.reasoningEnabled) toolInstructions += "\n\n[SYSTEM: DEEP THINKING ACTIVE] You MUST show a detailed step-by-step reasoning path before your final answer.";
+    if (settings?.calculatorEnabled) toolInstructions += "\n\n[SYSTEM: MATH PROTOCOL] Provide precise mathematical derivations for all calculations.";
+    if (settings?.codeEnabled) toolInstructions += "\n\n[SYSTEM: CODE ARCHITECT] Prioritize clean, documented, and modular code snippets using markdown fences.";
 
     if (activeMessages.length > 0 && activeMessages[0].role === 'system') {
-      activeMessages[0].content = `${temporalPrefix}${activeMessages[0].content}${groundingPrefix}`;
+      activeMessages[0].content = `${temporalPrefix}${activeMessages[0].content}${toolInstructions}`;
     }
 
-    // ONLINE MODE (GENKIT)
+    // ONLINE MODE (GENKIT / GEMINI)
     if (baseUrl === 'genkit') {
       const targetModel = (modelId.startsWith('googleai/') ? modelId : `googleai/${modelId}`) as any;
       const lastMsg = activeMessages[activeMessages.length - 1];
       const systemMsg = activeMessages.find(m => m.role === 'system')?.content || "";
+      
+      // Gemini expects 'model' for assistant role in history
       const history = activeMessages.filter(m => m.role !== 'system' && m !== lastMsg).map(m => ({
-        role: m.role as any,
+        role: (m.role === 'assistant' ? 'model' : m.role) as any,
         content: [{ text: m.content }]
       }));
 
@@ -73,12 +79,12 @@ export async function POST(req: NextRequest) {
     let chatUrl = baseUrl.trim().replace(/\/+$/, '');
     if (!/^https?:\/\//i.test(chatUrl)) chatUrl = `http://${chatUrl}`;
     
-    // Resilient Dual-Stack Fallback for Localhost
     const urls = [chatUrl];
     if (chatUrl.includes('localhost')) {
       urls.push(chatUrl.replace('localhost', '127.0.0.1'));
     }
 
+    // Intelligent suffix detection
     const finalEndpointSuffix = chatUrl.includes('/v1') ? '/chat/completions' : '/v1/chat/completions';
     
     let lastError: any = null;
@@ -109,7 +115,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return new Response(JSON.stringify({ error: `Engine Unreachable: ${lastError?.message}` }), { status: 500 });
+    return new Response(JSON.stringify({ error: `Node Unreachable: ${lastError?.message || 'Handshake rejected.'}` }), { status: 500 });
 
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
